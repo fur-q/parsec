@@ -5,7 +5,9 @@
 
 -- TODO:
 -- luadoc
--- optimise
+-- proper examples
+-- add strict mode (throw error if unspecified flag is passed)?
+-- add manual override of shortflags (sounds simpler than it is)
 -- add "choice", "param" option types?
 
 -- wrap a string to 80 characters wide
