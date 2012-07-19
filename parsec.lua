@@ -5,9 +5,9 @@
 
 -- TODO:
 -- luadoc
--- proper examples
 -- add strict mode (throw error if unspecified flag is passed)?
 -- add manual override of shortflags (sounds simpler than it is)
+-- add notification in helptext for required args?
 -- add "choice", "param" option types?
 
 -- wrap a string to 80 characters wide
@@ -56,10 +56,10 @@ end
 -- add a new flag
 function _M:setopt(idx, val)
   if #val ~= 2 then 
-    error("Incorrect number of parameters for flag: " .. idx) 
+    error("Incorrect number of parameters for flag: " .. idx, 2)
   end
   if val[1] ~= "string" and val[1] ~= "number" and val[1] ~= "bool" then
-    error("Invalid type for flag: " .. idx)
+    error("Invalid type for flag: " .. idx, 2)
   end
   if #idx > (self.longest or 0) then
     rawset(self, "longest", #idx)
@@ -80,7 +80,7 @@ function _M:abbr(name)
       return n
     end
   end
-  error("Unable to create short flag: "..name)
+  error("Unable to create short flag: "..name, 2)
 end
 
 -- parse options
@@ -106,7 +106,7 @@ end
 
 -- default error if not overridden
 function _M:error(str)
-  print(str .. "\n")
+  print(str.."\n")
   print(self:help())
   os.exit(1)
 end

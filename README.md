@@ -8,7 +8,7 @@ it's a super simple command line option parser (think getopt, optparse et al).
 
 ## how do i use this?
 
-see test-parsec.lua for example usage.
+see test.lua for example usage.
 
 ## why would i use this?
 
