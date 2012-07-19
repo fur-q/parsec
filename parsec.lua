@@ -59,7 +59,7 @@ function _M:setopt(idx, val)
     error("Incorrect number of parameters for flag: " .. idx) 
   end
   if val[1] ~= "string" and val[1] ~= "number" and val[1] ~= "bool" then
-    error("Invalid type for flag:" .. idx)
+    error("Invalid type for flag: " .. idx)
   end
   if #idx > (self.longest or 0) then
     rawset(self, "longest", #idx)
