@@ -27,6 +27,6 @@ p:parse()
 -- print the helptext (e.g. for --help)
 if p.bool then print(p:help()) end
 
--- given the input: app.lua -bo -s hello -t "good bye" theparam
+-- given the input: app.lua -bu -s hello -t "good bye" theparam
 print(p.bool, p.buul, p.string, p.strong, p.number, p.numero, p.param)
 -- true   true   hello   good bye   5   nil   theparam

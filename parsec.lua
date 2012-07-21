@@ -10,22 +10,25 @@
 -- luadoc?
 -- add notification in helptext for required args?
 
+local tinsert, tconcat, srep, sfmt = table.insert, table.concat, string.rep, string.format
+local pairs, ipairs, rawset, setmetatable = pairs, ipairs, rawset, setmetatable
+
 -- wrap a string to 80 characters wide
 local function wrap(str, idt)
   idt = idt or 0
   local count, line, out = 0, {}, {}
   for m in str:gmatch("[^ ]+") do
     if count + #m >= 80 - idt then
-      table.insert(out, table.concat(line, " "))
+      tinsert(out, tconcat(line, " "))
       line = { m }
       count = #m + 1
     else
-      table.insert(line, m)
+      tinsert(line, m)
       count = count + #m + 1
     end
   end
-  table.insert(out, table.concat(line, " "))
-  return table.concat(out, "\n" .. string.rep(" ", idt))
+  tinsert(out, tconcat(line, " "))
+  return tconcat(out, "\n" .. srep(" ", idt))
 end
 
 -- check if table contains value
@@ -63,10 +66,10 @@ function _M:addopt(idx, val)
   out.default, out.required = val.default, val.required
   if out.type == "param" then
     out.name = idx
-    table.insert(self.params, out)
+    tinsert(self.params, out)
   else
     out.long, out.short = idx, self:abbr(idx)
-    table.insert(self.opts, out)
+    tinsert(self.opts, out)
   end
 end
 
@@ -86,13 +89,12 @@ end
 function _M:set_usage(str)
   local out = { "usage:", arg[0], #self.opts > 0 and "(options)" or nil }
   for k,v in ipairs(self.params) do
-    table.insert(out, v.name:upper())
+    tinsert(out, v.name:upper())
   end
-  return table.concat(out, " ")
+  return tconcat(out, " ")
 end
 
--- setopt and setparam, used by parse()
-
+-- parse options
 function _M:setopt(opt, val)
   for k,v in pairs(self.opts) do
     if v.long == opt or v.short == opt then
@@ -114,14 +116,14 @@ function _M:parse()
   -- run this in a closure to emulate continue
   while arg[n+1] ~= nil do (function()
     n = n + 1
-    local a = arg[n]
-    -- search for matching args
-    local long = a:match("^%-%-(.+)")
+    local opt = arg[n]
+    -- search for matching options
+    local long = opt:match("^%-%-(.+)")
     if long then 
       n = n + self:setopt(long, arg[n+1])
       return false
     end
-    local short = a:match("^%-(.+)")
+    local short = opt:match("^%-(.+)")
     if short then
       if #short == 1 then
         n = n + self:setopt(short, arg[n+1]) 
@@ -130,12 +132,12 @@ function _M:parse()
       end
       return false
     end
-    -- no matching args found, assume it's a param
+    -- no matching options found, assume it's a param
     p = p + 1
     if p > #self.params then
-      self:error("Unhandled parameter: " .. a)
+      self:error("Unhandled parameter: " .. opt)
     end
-    rawset(self, self.params[p].name, a)
+    rawset(self, self.params[p].name, opt)
   end)() end
   -- FIXME this probably shouldn't need another loop
   for k,v in pairs(self.opts) do
@@ -158,26 +160,22 @@ end
 -- generate usage/help text
 function _M:help()
   local out, idt = {}, self.longest + pad
-  table.insert(out, self:set_usage())
-  if self.descr ~= "" then table.insert(out, wrap(self.descr)) end
-  table.insert(out, "options:")
+  tinsert(out, self:set_usage())
+  if self.descr ~= "" then tinsert(out, wrap(self.descr)) end
+  tinsert(out, "options:")
   for k,v in pairs(self.opts) do
     local descr
     if v.descr and #v.descr > 80 - idt then
       descr = wrap(v.descr, idt)
     end
     descr = descr or v.descr or ""
-    local str = string.format(
-      "  -%s, --%-"..self.longest.."s  %s", v.short, v.long, descr
-    )
-    table.insert(out, str)
+    local str = sfmt("  -%s, --%-"..self.longest.."s  %s", v.short, v.long, descr)
+    tinsert(out, str)
     if v.default then
-      table.insert(out, string.format(
-        "%s(default: %s)", string.rep(" ", idt), v.default
-      ))
+      tinsert(out, sfmt("%s(default: %s)", srep(" ", idt), v.default))
     end
   end
-  return table.concat(out, "\n")
+  return tconcat(out, "\n")
 end
 
 local parsec = {}
