@@ -58,10 +58,9 @@ function _M:addopt(idx, val)
     error("Invalid type for flag: " .. idx, 2)
   end
   if #idx > (self.longest or 0) then rawset(self, "longest", #idx) end
-  if val.default then rawset(self, idx, val.default) end
   local out = {}
   out.type, out.descr = unpack(val)
-  out.required = val.required
+  out.default, out.required = val.default, val.required
   if out.type == "param" then
     out.name = idx
     table.insert(self.params, out)
@@ -140,6 +139,9 @@ function _M:parse()
   end)() end
   -- FIXME this probably shouldn't need another loop
   for k,v in pairs(self.opts) do
+    if v.default and not self[v.long] then
+      rawset(self, v.long, v.default) 
+    end
     if v.required and not self[v.long] then
       self:error("Required option not given: " .. v.long)
     end

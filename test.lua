@@ -100,6 +100,7 @@ options:
   -t, --str2   a string with an unexpectedly long description, even more
                unexpectedly long than in your wildest dreams
   -n, --num1   a number
+               (default: 5)
   -u, --num2   another number]]
 
 test("seven", p:help() == help)
