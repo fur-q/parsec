@@ -102,9 +102,9 @@ options:
   -n, --num1   a number
   -u, --num2   another number]]
 
-test("six", p:help() == help)
+test("seven", p:help() == help)
 
--- test 7:
+-- test 8:
 -- shortflag generation
 -- TODO: allow setting shortflags manually?
 
@@ -114,5 +114,6 @@ p.abc = { "bool",   "a boolean" }
 p.bcd = { "string", "a string", required = true }
 local ret, err = pcall(function() p.ab  = { "string", "this won't work :(" } end)
 
-test("seven", ret == false, err:match("Unable to create") ~= nil)
+test("eight", ret == false, err:match("Unable to create") ~= nil)
 
+print("all tests passed \\o/")
