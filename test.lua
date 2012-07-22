@@ -1,6 +1,6 @@
 local parsec = require "parsec"
 
-local function setup(inv, err)
+local function setup(inv)
   local p = parsec.new()
 
   p:set_descr("an awesome application which does so much stuff that the description text is more than 80 characters in length")
@@ -19,8 +19,6 @@ local function setup(inv, err)
     p.inv = { "string" }  -- nor will this
   end
 
-  if err then p:set_error(function(self) error(":(") end) end
-
   return p
 end
 
@@ -32,62 +30,58 @@ local function test(name, ...)
       return false
     end
   end
+  print(string.format("test %s passed", name))
   return true
 end
 
--- test 1:
--- short args
--- compound shortflags
+-- test 1: shortflags
 
-arg = { [0] = "test", "-bo", "-s", "hello", "-t", "goodbye", "-n", "1", "-u", "3", "param" }
+arg = { [0] = "test", "-bos", "hello", "-t", "goodbye", "-n", "1", "-u", "3", "param" }
 local p = setup()
 p:parse()
 
 test("one", p.bool == true, p.bool2 == true, p.str1 == "hello", p.str2 == "goodbye", p.num1 == 1, p.num2 == 3, p.param == "param")
 
--- test 2:
--- long args, default args, unset args
+-- test 2: long flags, default args, unset args, multiple params
 
-arg = { [0] = "test", "--str1", "hello" }
+arg = { [0] = "test", "--str1", "hello", "param", "param2", "param3" }
 local p = setup()
+p.param2 = { "param", "another parameter", count = 2 }
 p:parse()
 
-test("two", p.bool == nil, p.str1 == "hello", p.str2 == nil, p.num1 == 5, p.num2 == nil)
+test("two", p.bool == nil, p.str1 == "hello", p.str2 == nil, p.num1 == 5, p.num2 == nil, p.param == "param", p.param2[1] == "param2", p.param2[2] == "param3")
 
--- test 3:
--- error when unspecified args passed
+-- test 3: error when unspecified args passed, override error()
 
 arg = { [0] = "test", "--nope", "this won't work" }
-local p = setup(nil, true)
+local p = setup()
+p:set_error(function(self) error(":(") end)
 local ret, err = pcall(function() p:parse() end)
 
 test("three", ret == false, err:match(":%(") ~= nil)
 
--- test 4:
--- required args, override error()
+-- test 4: required args/params missing, override error()
 
 arg = { [0] = "test" }
-local p = setup(nil, true)
+local p = setup()
+p:set_error(function(self) error(":(") end)
 local ret, err = pcall(function() p:parse() end)
 
 test("four", ret == false, err:match(":%(") ~= nil)
 
--- test 5:
--- error when invalid arg type specified
+-- test 5: error when unknown arg type set
 
 local ret, err = pcall(setup, 1)
 
 test("five", ret == false, err:match("Invalid type") ~= nil)
 
--- test 6:
--- invalid arg count
+-- test 6: error when no description set
 
 local ret, err = pcall(setup, 2)
 
 test("six", ret == false, err:match("Incorrect number") ~= nil)
 
--- test 7:
--- help text formatting
+-- test 7: help text formatting
 
 local help = 
 [[usage: test (options) PARAM
@@ -103,11 +97,9 @@ options:
                (default: 5)
   -u, --num2   another number]]
 
-test("seven", p:help() == help)
+test("seven", p:get_help() == help)
 
--- test 8:
--- shortflag generation
--- TODO: allow setting shortflags manually?
+-- test 8: shortflag generation
 
 local p = parsec.new()
 

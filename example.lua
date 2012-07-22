@@ -20,13 +20,14 @@ p.number = { "number", "a number", default = 5 }     -- -n
 p.numero = { "number", "another number" }            -- -m
 -- set the parameters
 p.param  = { "param",  "a parameter" }
+p.paran  = { "param",  "another parameter", count = 2 }
 
 -- parse the options
 p:parse()
 
 -- print the helptext (e.g. for --help)
-if p.bool then print(p:help()) end
+if p.bool then print(p:get_help()) end
 
--- given the input: app.lua -bu -s hello -t "good bye" theparam
-print(p.bool, p.buul, p.string, p.strong, p.number, p.numero, p.param)
--- true   true   hello   good bye   5   nil   theparam
+-- given the input: app.lua -ubs hello -t "good bye" param1 param2 param3
+print(p.bool, p.buul, p.string, p.strong, p.number, p.numero, p.param, p.paran)
+-- true   true   hello   good bye   5   nil   param1   { param2, param3 }

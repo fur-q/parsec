@@ -4,20 +4,18 @@
 --- 2012/07/21
 
 -- TODO:
--- last flag in compound shortflags should be able to take a value
 -- required params
--- add manual override of shortflags (sounds simpler than it is)
--- luadoc?
--- add notification in helptext for required args?
+-- manual override of shortflags (sounds simpler than it is)
+-- notification in helptext for required args?
 
 local tinsert, tconcat, srep, sfmt = table.insert, table.concat, string.rep, string.format
-local pairs, ipairs, rawset, setmetatable = pairs, ipairs, rawset, setmetatable
+local pairs, ipairs, rawset, tonumber, unpack = pairs, ipairs, rawset, tonumber, unpack
 
 -- wrap a string to 80 characters wide
 local function wrap(str, idt)
   idt = idt or 0
   local count, line, out = 0, {}, {}
-  for m in str:gmatch("[^ ]+") do
+  for m in str:gmatch("%S+") do
     if count + #m >= 80 - idt then
       tinsert(out, tconcat(line, " "))
       line = { m }
@@ -63,12 +61,12 @@ function _M:addopt(idx, val)
   if #idx > (self.longest or 0) then rawset(self, "longest", #idx) end
   local out = {}
   out.type, out.descr = unpack(val)
-  out.default, out.required = val.default, val.required
   if out.type == "param" then
-    out.name = idx
+    out.name, out.count = idx, val.count or 1
     tinsert(self.params, out)
   else
     out.long, out.short = idx, self:abbr(idx)
+    out.default, out.required = val.default, val.required
     tinsert(self.opts, out)
   end
 end
@@ -111,35 +109,50 @@ function _M:setopt(opt, val)
   self:error("Unrecognised option: " .. opt)
 end
 
-function _M:parse()
-  local n, p = 0, 0
-  -- run this in a closure to emulate continue
-  while arg[n+1] ~= nil do (function()
-    n = n + 1
-    local opt = arg[n]
-    -- search for matching options
-    local long = opt:match("^%-%-(.+)")
-    if long then 
-      n = n + self:setopt(long, arg[n+1])
-      return false
-    end
-    local short = opt:match("^%-(.+)")
-    if short then
-      if #short == 1 then
-        n = n + self:setopt(short, arg[n+1]) 
-      else
-        for x in short:gmatch(".") do self:setopt(x) end
+function _M:checkopt(n,p)
+  local opt = arg[n]
+  -- search for matching options
+  local long = opt:match("^%-%-(.+)")
+  if long then 
+    return n + self:setopt(long, arg[n+1]), p
+  end
+  local short = opt:match("^%-(.+)")
+  if short then
+    if #short == 1 then
+      return n + self:setopt(short, arg[n+1]), p
+    else
+      local inc
+      for x in short:gmatch(".") do 
+        inc = self:setopt(x, arg[n+1])
       end
-      return false
+      return n + inc, p
     end
-    -- no matching options found, assume it's a param
-    p = p + 1
-    if p > #self.params then
-      self:error("Unhandled parameter: " .. opt)
+  end
+  -- no matching options found, assume it's a param
+  if p > #self.params then
+    self:error("Unhandled parameter: " .. opt)
+  end
+  local prm = self.params[p]
+  if prm.count > 1 then
+    if not self[prm.name] then 
+      rawset(self, prm.name, { opt })
+    else
+      table.insert(self[prm.name], opt)
     end
-    rawset(self, self.params[p].name, opt)
-  end)() end
-  -- FIXME this probably shouldn't need another loop
+    if #self[prm.name] == prm.count then p = p + 1 end
+    return n, p
+  end
+  rawset(self, prm.name, opt)
+  return n, p + 1
+end
+
+function _M:parse()
+  local n, p = 1, 1
+  while arg[n] ~= nil do 
+    n, p = self:checkopt(n,p)
+    n = n + 1
+    if not arg[n] then break end
+  end
   for k,v in pairs(self.opts) do
     if v.default and not self[v.long] then
       rawset(self, v.long, v.default) 
@@ -148,17 +161,22 @@ function _M:parse()
       self:error("Required option not given: " .. v.long)
     end
   end
+  for k,v in ipairs(self.params) do
+    if not self[v.name] or v.count > 1 and #self[v.name] ~= v.count then
+      self:error("Required param not given: " .. v.name)
+    end
+  end
 end
 
 -- default error if not overridden
 function _M:error(str)
   print(str.."\n")
-  print(self:help())
+  print(self:get_help())
   os.exit(1)
 end
 
 -- generate usage/help text
-function _M:help()
+function _M:get_help()
   local out, idt = {}, self.longest + pad
   tinsert(out, self:set_usage())
   if self.descr ~= "" then tinsert(out, wrap(self.descr)) end
