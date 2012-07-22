@@ -4,7 +4,7 @@
 --- 2012/07/21
 
 -- TODO:
--- required params
+-- last param should be able to take unspecified number of args
 -- manual override of shortflags (sounds simpler than it is)
 -- notification in helptext for required args?
 
